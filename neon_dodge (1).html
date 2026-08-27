@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Dodge</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#05050a;color:#fff;font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
+#wrap{text-align:center}h1{margin:0 0 8px;color:#28a9ff;text-shadow:0 0 15px #28a9ff}p{margin:5px;color:#aaa}
+canvas{display:block;background:#080b16;border:3px solid #168cff;box-shadow:0 0 30px #006cff;border-radius:12px}
+button{margin-top:12px;padding:10px 22px;border:0;border-radius:8px;background:#ff1744;color:#fff;font-weight:bold;font-size:16px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="wrap">
+<h1>🚨 FEDS! 🚨</h1>
+<p>Move with ← → or A / D • Dodge the red blocks!</p>
+<canvas id="game" width="700" height="450"></canvas>
+<div id="score">Score: 0</div>
+<button onclick="restart()">START / RESTART</button>
+</div>
+<script>
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+let player,blocks,score,gameOver,keys,last,spawnTimer;
+function restart(){
+ player={x:330,y:395,w:40,h:25,s:7}; blocks=[]; score=0; gameOver=false; last=0;spawnTimer=0;
+ requestAnimationFrame(loop);
+}
+addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
+addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+addEventListener("keydown",e=>{
+  if(e.key==="Enter" && gameOver) restart();
+});
+keys={};
+function spawn(){blocks.push({x:Math.random()*660,y:-30,w:25+Math.random()*35,h:20+Math.random()*25,s:3+Math.random()*3+score/500});}
+function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function loop(t){
+ if(gameOver){draw();return}
+ let dt=Math.min((t-last)/16.67,2);last=t;
+ if(keys["arrowleft"]||keys["a"])player.x-=player.s*dt;
+ if(keys["arrowright"]||keys["d"])player.x+=player.s*dt;
+ player.x=Math.max(0,Math.min(c.width-player.w,player.x));
+ spawnTimer+=dt;
+ if(spawnTimer>28){spawn();spawnTimer=0}
+ blocks.forEach(b=>b.y+=b.s*dt);
+ blocks=blocks.filter(b=>b.y<c.height+40);
+ for(const b of blocks)if(hit(player,b)){gameOver=true}
+ score+=dt*.6;
+ document.getElementById("score").textContent="Score: "+Math.floor(score);
+ draw();requestAnimationFrame(loop);
+}
+function draw(){
+ ctx.clearRect(0,0,c.width,c.height);
+ ctx.strokeStyle="rgba(30,150,255,.08)";
+ for(let x=0;x<c.width;x+=35){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}
+ for(let y=0;y<c.height;y+=35){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}
+ ctx.shadowBlur=18;ctx.shadowColor="#20a8ff";ctx.fillStyle="#20a8ff";ctx.fillRect(player.x,player.y,player.w,player.h);
+ ctx.shadowColor="#ff1744";ctx.fillStyle="#ff1744";
+ blocks.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));ctx.shadowBlur=0;
+ if(gameOver){ctx.fillStyle="rgba(0,0,0,.72)";ctx.fillRect(0,0,c.width,c.height);ctx.textAlign="center";ctx.fillStyle="#fff";ctx.font="bold 48px Arial";ctx.fillText("GAME OVER",c.width/2,200);ctx.font="24px Arial";ctx.fillText("Score: "+Math.floor(score),c.width/2,245);ctx.font="18px Arial";ctx.fillText("Press ENTER to Restart",c.width/2,285)}
+}
+restart();
+</script>
+</body>
+</html>
